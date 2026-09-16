@@ -1,12 +1,88 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>꽃사남매 쿠폰</title>
+    <title>가족 쿠폰</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>꽃사남매 쿠폰 사이트 준비 완료! 🎉</h1>
-    <p>1단계 호스팅이 성공적으로 완료되었습니다.</p>
+    <h1>가족 쿠폰 사이트</h1>
+    <p>가족 비밀번호를 입력해주세요.</p>
+
+    <input type="password" id="pwInput" placeholder="비밀번호 입력">
+    <button id="loginBtn">입장하기</button>
+    <p id="message"></p>
+
+    <!-- Firebase 연동 스크립트 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const inputPw = document.getElementById('pwInput').value;
+            const messageEl = document.getElementById('message');
+
+            if (!inputPw) {
+                messageEl.innerText = "비밀번호를 입력하세요!";
+                messageEl.style.color = "red";
+                return;
+            }
+
+            messageEl.innerText = "비밀번호 확인 중...";
+            messageEl.style.color = "black";
+
+            try {
+                // Firebase에서 설정해둔 auth 문서 가져오기
+                const docRef = doc(db, "settings", "auth");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (inputPw === data.familyPassword) {
+                        messageEl.innerText = "로그인 성공! 🎉 (3단계에서 진짜 화면으로 넘어가게 됩니다)";
+                        messageEl.style.color = "blue";
+                    } else {
+                        messageEl.innerText = "비밀번호가 틀렸습니다.";
+                        messageEl.style.color = "red";
+                    }
+                } else {
+                    messageEl.innerText = "DB에 비밀번호 설정이 없습니다.";
+                }
+            } catch (error) {
+                console.error("DB 에러:", error);
+                messageEl.innerText = "데이터베이스 연결 오류가 발생했습니다.";
+            }
+        });
+    </script>
 </body>
+
 </html>
