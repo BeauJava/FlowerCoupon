@@ -4,82 +4,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>가족 쿠폰</title>
+    <title>우리가족 쿠폰</title>
+    <!-- 귀여운 폰트 불러오기 -->
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: sans-serif;
-            text-align: center;
-            padding: 50px;
+            font-family: 'Jua', sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
 
-        input {
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: opacity 0.5s ease;
+            width: 320px;
+        }
+
+        /* 구글 로그인 버튼 스타일 */
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            color: #757575;
+            border: 1px solid #ddd;
+            border-radius: 5px;
             padding: 10px;
             font-size: 16px;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        #message {
-            margin-top: 20px;
             font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            transition: background-color 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .google-btn:hover {
+            background-color: #f5f5f5;
+        }
+
+        .google-btn img {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+        }
+
+        #error-msg {
+            color: #ff4d4d;
+            font-size: 15px;
+            margin-top: 15px;
+            min-height: 20px;
         }
     </style>
 </head>
 
 <body>
-    <h1>가족 쿠폰 사이트</h1>
-    <p>가족 비밀번호를 입력해주세요.</p>
 
-    <input type="password" id="pwInput" placeholder="비밀번호 입력">
-    <button id="loginBtn">입장하기</button>
-    <p id="message"></p>
+    <!-- 1. 로그인 화면 -->
+    <div class="container" id="login-section">
+        <h1 style="color: #333; margin-bottom: 5px;">🏠 우리가족 쿠폰</h1>
+        <p style="color: #666;">가족 계정으로 로그인해주세요!</p>
 
-    <!-- Firebase 연동 스크립트 -->
+        <!-- Google 로그인 버튼 -->
+        <button id="google-login-btn" class="google-btn">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo">
+            Google 계정으로 로그인
+        </button>
+
+        <div id="error-msg"></div>
+    </div>
+
+    <!-- 2. 메인 화면 (처음엔 숨겨둠) -->
+    <div class="container" id="main-section" style="display: none; opacity: 0; width: 80%; max-width: 800px;">
+        <h1 style="color: #4CAF50;">🎉 환영합니다!</h1>
+        <p id="user-info"></p>
+        <p>이제 4단계에서 이곳에 4명의 쿠폰 현황판을 만들 거예요!</p>
+    </div>
+
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        // 🔥 Google Auth 관련 모듈 추가
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGzJ2suW63ek-hkZ6IVg8t8gQlFmCS2fs",
+            authDomain: "flowercoupon-7a748.firebaseapp.com",
+            projectId: "flowercoupon-7a748",
+            storageBucket: "flowercoupon-7a748.firebasestorage.app",
+            messagingSenderId: "182524668070",
+            appId: "1:182524668070:web:366e6b863c65d07c25ac67"
+        };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider(); // 구글 로그인 프로바이더
         const db = getFirestore(app);
 
-        document.getElementById('loginBtn').addEventListener('click', async () => {
-            const inputPw = document.getElementById('pwInput').value;
-            const messageEl = document.getElementById('message');
+        const loginSection = document.getElementById('login-section');
+        const mainSection = document.getElementById('main-section');
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const userInfo = document.getElementById('user-info');
 
-            if (!inputPw) {
-                messageEl.innerText = "비밀번호를 입력하세요!";
-                messageEl.style.color = "red";
-                return;
+        // 성공 시 화면 전환 함수
+        function showMainScreen(user) {
+            loginSection.style.opacity = 0;
+            setTimeout(() => {
+                loginSection.style.display = 'none';
+                mainSection.style.display = 'block';
+                userInfo.innerText = `${user.displayName}님, 환영합니다!`; // 로그인한 사람 이름 표시
+                setTimeout(() => {
+                    mainSection.style.opacity = 1;
+                }, 50);
+            }, 500);
+        }
+
+        // 로그인 상태 감지 (이미 로그인되어 있으면 바로 메인 화면으로)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                showMainScreen(user);
             }
+        });
 
-            messageEl.innerText = "비밀번호 확인 중...";
-            messageEl.style.color = "black";
-
+        // Google 로그인 버튼 클릭 이벤트
+        googleLoginBtn.addEventListener('click', async () => {
             try {
-                // Firebase에서 설정해둔 auth 문서 가져오기
-                const docRef = doc(db, "settings", "auth");
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (inputPw === data.familyPassword) {
-                        messageEl.innerText = "로그인 성공! 🎉 (3단계에서 진짜 화면으로 넘어가게 됩니다)";
-                        messageEl.style.color = "blue";
-                    } else {
-                        messageEl.innerText = "비밀번호가 틀렸습니다.";
-                        messageEl.style.color = "red";
-                    }
-                } else {
-                    messageEl.innerText = "DB에 비밀번호 설정이 없습니다.";
-                }
+                errorMsg.innerText = "로그인 중...";
+                // 팝업 창으로 구글 로그인 실행
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                showMainScreen(user);
             } catch (error) {
-                console.error("DB 에러:", error);
-                messageEl.innerText = "데이터베이스 연결 오류가 발생했습니다.";
+                console.error("Google 로그인 에러:", error);
+                errorMsg.innerText = "로그인에 실패했습니다. 다시 시도해주세요.";
             }
         });
     </script>
