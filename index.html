@@ -14,18 +14,21 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .container {
             background: white;
-            padding: 40px;
+            padding: 30px;
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             text-align: center;
             transition: opacity 0.5s ease;
-            width: 320px;
+            width: 100%;
+            max-width: 800px;
         }
 
         /* 구글 로그인 버튼 스타일 */
@@ -41,8 +44,8 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 20px;
-            width: 100%;
+            margin: 20px auto 0;
+            width: 250px;
             transition: background-color 0.3s;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
@@ -51,17 +54,74 @@
             background-color: #f5f5f5;
         }
 
-        .google-btn img {
-            width: 24px;
-            height: 24px;
-            margin-right: 10px;
+        /* 4인 대시보드 그리드 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
         }
 
-        #error-msg {
-            color: #ff4d4d;
-            font-size: 15px;
-            margin-top: 15px;
-            min-height: 20px;
+        /* 개별 카드 디자인 */
+        .card {
+            background: #fff9e6;
+            border: 3px solid #ffcc00;
+            border-radius: 15px;
+            padding: 20px 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .balance-box {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 28px;
+            color: #4CAF50;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        /* 기능 버튼들 (5단계에서 활성화될 예정) */
+        .action-btn {
+            font-family: 'Jua', sans-serif;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 8px 0;
+            width: 90%;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 5px;
+            transition: transform 0.1s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-issue {
+            background-color: #2196F3;
+        }
+
+        .btn-deduct {
+            background-color: #f44336;
+        }
+
+        .btn-cash {
+            background-color: #4CAF50;
+        }
+
+        .btn-cash:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -71,9 +131,8 @@
     <!-- 1. 로그인 화면 -->
     <div class="container" id="login-section">
         <h1 style="color: #333; margin-bottom: 5px;">🏠 꽃사남매 쿠폰</h1>
-        <p style="color: #666;">우리가족 아무나 구글 계정으로 로그인!</p>
+        <p style="color: #666;">가족 계정으로 로그인해주세요!</p>
 
-        <!-- Google 로그인 버튼 (안전한 Inline SVG 적용) -->
         <button id="google-login-btn" class="google-btn">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"
                 style="width: 24px; height: 24px; margin-right: 10px;">
@@ -89,22 +148,54 @@
             </svg>
             Google 계정으로 로그인
         </button>
-
-        <div id="error-msg"></div>
+        <div id="error-msg" style="color:red; margin-top:15px;"></div>
     </div>
 
-    <!-- 2. 메인 화면 (처음엔 숨겨둠) -->
-    <div class="container" id="main-section" style="display: none; opacity: 0; width: 80%; max-width: 800px;">
-        <h1 style="color: #4CAF50;">🎉 환영합니다!</h1>
-        <p id="user-info"></p>
-        <p>이제 4단계에서 이곳에 4명의 쿠폰 현황판을 만들 거예요!</p>
+    <!-- 2. 메인 화면 -->
+    <div class="container" id="main-section" style="display: none; opacity: 0;">
+        <h2 style="color: #4CAF50; margin-top: 0;">🎉 <span id="user-info"></span>님, 환영합니다!</h2>
+
+        <div class="grid-container">
+            <!-- 하얀 -->
+            <div class="card">
+                <h3>하얀</h3>
+                <div class="balance-box"><span id="bal-hayan">0</span>원</div>
+                <button class="action-btn btn-issue">발급</button>
+                <button class="action-btn btn-deduct">차감</button>
+                <button class="action-btn btn-cash" disabled>현금화</button>
+            </div>
+            <!-- 가을 -->
+            <div class="card">
+                <h3>가을</h3>
+                <div class="balance-box"><span id="bal-gaeul">0</span>원</div>
+                <button class="action-btn btn-issue">발급</button>
+                <button class="action-btn btn-deduct">차감</button>
+                <button class="action-btn btn-cash" disabled>현금화</button>
+            </div>
+            <!-- 하늘 -->
+            <div class="card">
+                <h3>하늘</h3>
+                <div class="balance-box"><span id="bal-haneul">0</span>원</div>
+                <button class="action-btn btn-issue">발급</button>
+                <button class="action-btn btn-deduct">차감</button>
+                <button class="action-btn btn-cash" disabled>현금화</button>
+            </div>
+            <!-- 한별 -->
+            <div class="card">
+                <h3>한별</h3>
+                <div class="balance-box"><span id="bal-hanbyeol">0</span>원</div>
+                <button class="action-btn btn-issue">발급</button>
+                <button class="action-btn btn-deduct">차감</button>
+                <button class="action-btn btn-cash" disabled>현금화</button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // 🔥 Google Auth 관련 모듈 추가
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // 🔥 Firestore 실시간 리스너(onSnapshot) 모듈 추가
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDGzJ2suW63ek-hkZ6IVg8t8gQlFmCS2fs",
@@ -117,46 +208,59 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const provider = new GoogleAuthProvider(); // 구글 로그인 프로바이더
+        const provider = new GoogleAuthProvider();
         const db = getFirestore(app);
 
         const loginSection = document.getElementById('login-section');
         const mainSection = document.getElementById('main-section');
-        const googleLoginBtn = document.getElementById('google-login-btn');
-        const errorMsg = document.getElementById('error-msg');
         const userInfo = document.getElementById('user-info');
 
-        // 성공 시 화면 전환 함수
+        // 실시간 데이터 연동 함수
+        function listenToCoupons() {
+            const kids = ['hayan', 'gaeul', 'haneul', 'hanbyeol'];
+            kids.forEach(kid => {
+                const docRef = doc(db, "coupons", kid);
+                // onSnapshot은 DB 값이 바뀔 때마다 실시간으로 화면을 업데이트 해줍니다.
+                onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const balance = docSnap.data().balance;
+                        document.getElementById(`bal-${kid}`).innerText = balance.toLocaleString();
+
+                        // 5천원 이상이면 현금화 버튼 활성화 (5단계 준비)
+                        const cashBtn = document.getElementById(`bal-${kid}`).closest('.card').querySelector('.btn-cash');
+                        if (balance >= 5000) {
+                            cashBtn.disabled = false;
+                        } else {
+                            cashBtn.disabled = true;
+                        }
+                    }
+                });
+            });
+        }
+
         function showMainScreen(user) {
             loginSection.style.opacity = 0;
             setTimeout(() => {
                 loginSection.style.display = 'none';
                 mainSection.style.display = 'block';
-                userInfo.innerText = `${user.displayName}님, 환영합니다!`; // 로그인한 사람 이름 표시
+                userInfo.innerText = user.displayName;
                 setTimeout(() => {
                     mainSection.style.opacity = 1;
+                    listenToCoupons(); // 로그인 성공 시 실시간 연동 시작
                 }, 50);
             }, 500);
         }
 
-        // 로그인 상태 감지 (이미 로그인되어 있으면 바로 메인 화면으로)
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                showMainScreen(user);
-            }
+            if (user) showMainScreen(user);
         });
 
-        // Google 로그인 버튼 클릭 이벤트
-        googleLoginBtn.addEventListener('click', async () => {
+        document.getElementById('google-login-btn').addEventListener('click', async () => {
             try {
-                errorMsg.innerText = "로그인 중...";
-                // 팝업 창으로 구글 로그인 실행
                 const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                showMainScreen(user);
+                showMainScreen(result.user);
             } catch (error) {
-                console.error("Google 로그인 에러:", error);
-                errorMsg.innerText = "로그인에 실패했습니다. 다시 시도해주세요.";
+                console.error("로그인 에러:", error);
             }
         });
     </script>
