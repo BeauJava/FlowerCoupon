@@ -31,7 +31,17 @@
             max-width: 800px;
         }
 
-        /* 구글 로그인 버튼 스타일 */
+        /* 📺 리모컨 조작을 위한 강력한 포커스(Focus) 스타일 */
+        button:focus {
+            outline: 6px solid #ff4081;
+            /* 눈에 띄는 핫핑크 테두리 */
+            outline-offset: 4px;
+            transform: scale(1.05);
+            /* 살짝 커지는 효과 */
+            box-shadow: 0 0 15px rgba(255, 64, 129, 0.6);
+            z-index: 10;
+        }
+
         .google-btn {
             display: flex;
             align-items: center;
@@ -46,15 +56,9 @@
             cursor: pointer;
             margin: 20px auto 0;
             width: 250px;
-            transition: background-color 0.3s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
         }
 
-        .google-btn:hover {
-            background-color: #f5f5f5;
-        }
-
-        /* 4인 대시보드 그리드 */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -62,7 +66,6 @@
             margin-top: 20px;
         }
 
-        /* 개별 카드 디자인 */
         .card {
             background: #fff9e6;
             border: 3px solid #ffcc00;
@@ -88,23 +91,19 @@
             font-weight: bold;
         }
 
-        /* 기능 버튼들 (5단계에서 활성화될 예정) */
         .action-btn {
             font-family: 'Jua', sans-serif;
             background-color: #ff9800;
             color: white;
             border: none;
-            padding: 8px 0;
+            padding: 10px 0;
+            /* 리모컨 선택이 쉽도록 버튼을 약간 키웠습니다 */
             width: 90%;
-            font-size: 16px;
+            font-size: 18px;
             border-radius: 8px;
             cursor: pointer;
-            margin-bottom: 5px;
-            transition: transform 0.1s;
-        }
-
-        .action-btn:active {
-            transform: scale(0.95);
+            margin-bottom: 8px;
+            transition: all 0.2s;
         }
 
         .btn-issue {
@@ -131,7 +130,7 @@
     <!-- 1. 로그인 화면 -->
     <div class="container" id="login-section">
         <h1 style="color: #333; margin-bottom: 5px;">🏠 꽃사남매 쿠폰</h1>
-        <p style="color: #666;">가족 계정으로 로그인해주세요!</p>
+        <p style="color: #666;">리모컨의 확인 버튼을 눌러주세요!</p>
 
         <button id="google-login-btn" class="google-btn">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"
@@ -159,7 +158,7 @@
             <!-- 하얀 -->
             <div class="card">
                 <h3>하얀</h3>
-                <div class="balance-box"><span id="bal-hayan">0</span>원</div>
+                <div class="balance-box"><span id="bal-하얀">0</span>원</div>
                 <button class="action-btn btn-issue">발급</button>
                 <button class="action-btn btn-deduct">차감</button>
                 <button class="action-btn btn-cash" disabled>현금화</button>
@@ -167,7 +166,7 @@
             <!-- 가을 -->
             <div class="card">
                 <h3>가을</h3>
-                <div class="balance-box"><span id="bal-gaeul">0</span>원</div>
+                <div class="balance-box"><span id="bal-가을">0</span>원</div>
                 <button class="action-btn btn-issue">발급</button>
                 <button class="action-btn btn-deduct">차감</button>
                 <button class="action-btn btn-cash" disabled>현금화</button>
@@ -175,7 +174,7 @@
             <!-- 하늘 -->
             <div class="card">
                 <h3>하늘</h3>
-                <div class="balance-box"><span id="bal-haneul">0</span>원</div>
+                <div class="balance-box"><span id="bal-하늘">0</span>원</div>
                 <button class="action-btn btn-issue">발급</button>
                 <button class="action-btn btn-deduct">차감</button>
                 <button class="action-btn btn-cash" disabled>현금화</button>
@@ -183,7 +182,7 @@
             <!-- 한별 -->
             <div class="card">
                 <h3>한별</h3>
-                <div class="balance-box"><span id="bal-hanbyeol">0</span>원</div>
+                <div class="balance-box"><span id="bal-한별">0</span>원</div>
                 <button class="action-btn btn-issue">발급</button>
                 <button class="action-btn btn-deduct">차감</button>
                 <button class="action-btn btn-cash" disabled>현금화</button>
@@ -191,10 +190,13 @@
         </div>
     </div>
 
+    <!-- 5단계에서 쓰일 어른 비밀번호 입력 모달 (미리 준비만 해둠) -->
+    <!-- inputmode="numeric"과 pattern="[0-9]*"을 사용하면 모바일/태블릿에서 숫자기패드가 바로 튀어나옵니다! -->
+    <!-- <input type="password" inputmode="numeric" pattern="[0-9]*" id="adult-password"> -->
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        // 🔥 Firestore 실시간 리스너(onSnapshot) 모듈 추가
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -214,19 +216,22 @@
         const loginSection = document.getElementById('login-section');
         const mainSection = document.getElementById('main-section');
         const userInfo = document.getElementById('user-info');
+        const googleLoginBtn = document.getElementById('google-login-btn');
 
-        // 실시간 데이터 연동 함수
+        // 🔥 Firestore 한글 ID 배열
+        const kids = ['하얀', '가을', '하늘', '한별'];
+
         function listenToCoupons() {
-            const kids = ['hayan', 'gaeul', 'haneul', 'hanbyeol'];
             kids.forEach(kid => {
+                // 한글 이름으로 DB에서 문서 호출
                 const docRef = doc(db, "coupons", kid);
-                // onSnapshot은 DB 값이 바뀔 때마다 실시간으로 화면을 업데이트 해줍니다.
+
                 onSnapshot(docRef, (docSnap) => {
                     if (docSnap.exists()) {
                         const balance = docSnap.data().balance;
+                        // HTML 태그의 ID도 한글로 매핑 (id="bal-하얀")
                         document.getElementById(`bal-${kid}`).innerText = balance.toLocaleString();
 
-                        // 5천원 이상이면 현금화 버튼 활성화 (5단계 준비)
                         const cashBtn = document.getElementById(`bal-${kid}`).closest('.card').querySelector('.btn-cash');
                         if (balance >= 5000) {
                             cashBtn.disabled = false;
@@ -244,24 +249,64 @@
                 loginSection.style.display = 'none';
                 mainSection.style.display = 'block';
                 userInfo.innerText = user.displayName;
+
+                // 메인 화면 진입 시 첫 번째 버튼(하얀이 발급 버튼)에 강제로 포커스 주기 (리모컨 편의성)
                 setTimeout(() => {
                     mainSection.style.opacity = 1;
-                    listenToCoupons(); // 로그인 성공 시 실시간 연동 시작
+                    listenToCoupons();
+                    const firstBtn = document.querySelector('.btn-issue');
+                    if (firstBtn) firstBtn.focus();
                 }, 50);
             }, 500);
         }
 
         onAuthStateChanged(auth, (user) => {
-            if (user) showMainScreen(user);
+            if (user) {
+                showMainScreen(user);
+            } else {
+                // 로그인 화면일 땐 구글 버튼에 포커스
+                googleLoginBtn.focus();
+            }
         });
 
-        document.getElementById('google-login-btn').addEventListener('click', async () => {
+        googleLoginBtn.addEventListener('click', async () => {
             try {
                 const result = await signInWithPopup(auth, provider);
                 showMainScreen(result.user);
             } catch (error) {
                 console.error("로그인 에러:", error);
             }
+        });
+        // --- 📺 방향키(리모컨) 포커스 이동 지원 로직 ---
+        document.addEventListener('keydown', (e) => {
+            // 방향키가 아니면 무시
+            if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+
+            // 현재 화면에서 포커스 가능한(비활성화되지 않은) 모든 버튼과 입력창 찾기
+            const focusables = Array.from(document.querySelectorAll('button:not([disabled]), input'));
+            const currentIndex = focusables.indexOf(document.activeElement);
+
+            // 포커스된 요소가 없다면 첫 번째 요소에 포커스
+            if (currentIndex === -1) {
+                if (focusables.length > 0) focusables[0].focus();
+                return;
+            }
+
+            e.preventDefault(); // 기본 동작(화면 스크롤) 방지
+
+            let nextIndex = currentIndex;
+
+            // 오른쪽이나 아래 방향키를 누르면 다음 버튼으로
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                nextIndex = (currentIndex + 1) % focusables.length;
+            }
+            // 왼쪽이나 위 방향키를 누르면 이전 버튼으로
+            else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                nextIndex = (currentIndex - 1 + focusables.length) % focusables.length;
+            }
+
+            // 다음 대상에 포커스 적용
+            focusables[nextIndex].focus();
         });
     </script>
 </body>
