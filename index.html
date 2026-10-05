@@ -365,11 +365,11 @@
             <button class="close-btn" id="amt-cancel">취소</button>
         </div>
     </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // 🔥 로깅을 위해 collection, addDoc, serverTimestamp 추가
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDGzJ2suW63ek-hkZ6IVg8t8gQlFmCS2fs",
@@ -385,7 +385,6 @@
         const provider = new GoogleAuthProvider();
         const db = getFirestore(app);
 
-        // 🎵 오디오 객체 미리 생성 (업로드한 파일 이름과 동일해야 합니다)
         const soundIssue = new Audio('issue.mp3');
         const soundDeduct = new Audio('deduct.mp3');
         const soundCash = new Audio('cash.mp3');
@@ -404,7 +403,7 @@
         const amtBox = document.getElementById('amt-box');
         const amtTitle = document.getElementById('amt-title');
 
-        const kids = [{ id: '하얀', icon: '🐰' }, { id: '가을', icon: '🦊' }, { id: '하늘', icon: '🐶' }, { id: '한별', icon: '🐻' }];
+        const kids = [{ id: '하얀', icon: '🐰' }, { id: '가을', icon: '🦊' }, { id: '하늘', icon: '🐶' }, { id: '한별', icon: '🐣' }];
         let currentTargetKid = ''; let currentActionType = ''; let lastFocusedBtn = null;
 
         kids.forEach(kid => {
@@ -467,7 +466,7 @@
                     closeModal('pin-modal', 'pin-box');
                     if (currentActionType === 'cash') {
                         processTransaction(-5000);
-                        soundCash.play().catch(e => console.log(e)); // 🎵 현금화 사운드 재생
+                        soundCash.play().catch(e => console.log(e));
                         fireBigConfetti();
                     } else {
                         setTimeout(() => {
@@ -497,18 +496,14 @@
                 processTransaction(currentActionType === 'issue' ? amount : -amount);
                 closeModal('amt-modal', 'amt-box');
 
-                // 🌟 애니메이션 및 사운드 실행
                 if (currentActionType === 'issue') {
-                    soundIssue.play().catch(e => console.log(e)); // 🎵 발급 사운드
+                    soundIssue.play().catch(e => console.log(e));
                     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
                 } else {
-                    soundDeduct.play().catch(e => console.log(e)); // 🎵 차감 사운드
-
-                    // ⚡ 배경 흔들림 + 거대 이모지 팝업
+                    soundDeduct.play().catch(e => console.log(e));
                     document.body.classList.add('shake-danger');
                     penaltyVisual.style.display = 'block';
                     penaltyVisual.style.animation = 'pop-in-out 0.8s ease forwards';
-
                     setTimeout(() => {
                         document.body.classList.remove('shake-danger');
                         penaltyVisual.style.display = 'none';
@@ -519,7 +514,25 @@
         });
 
         document.getElementById('amt-cancel').addEventListener('click', () => closeModal('amt-modal', 'amt-box'));
-        async function processTransaction(amount) { await updateDoc(doc(db, "coupons", currentTargetKid), { balance: increment(amount) }).catch(e => console.error(e)); }
+
+        // 🔥 금액 업데이트와 동시에 로그(기록)를 남기는 로직
+        async function processTransaction(amount) {
+            try {
+                // 1. 잔액 업데이트
+                await updateDoc(doc(db, "coupons", currentTargetKid), { balance: increment(amount) });
+
+                // 2. 로그 컬렉션에 기록 추가
+                await addDoc(collection(db, "logs"), {
+                    actor: auth.currentUser.displayName || auth.currentUser.email || "가족계정", // 누가
+                    target: currentTargetKid, // 누구에게
+                    type: currentActionType, // 어떻게 (issue: 발급, deduct: 차감, cash: 현금화)
+                    amount: amount, // 얼마를
+                    timestamp: serverTimestamp() // 언제 (파이어베이스 서버 시간)
+                });
+            } catch (error) {
+                console.error("처리 실패", error);
+            }
+        }
 
         function fireBigConfetti() {
             var duration = 3 * 1000; var animationEnd = Date.now() + duration; var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
