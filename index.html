@@ -7,9 +7,9 @@
     <title>꽃사남매 쿠폰</title>
     <link rel="icon" href="favico.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
-    <!-- 🎊 폭죽 애니메이션 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
+        /* 기존 CSS 동일 유지 */
         body {
             font-family: 'Jua', sans-serif;
             background-color: #fce4ec;
@@ -26,9 +26,8 @@
             transition: background-color 0.3s;
         }
 
-        /* ⚡ 차감 시 화면 전체가 붉게 변하며 흔들리는 효과 */
         body.shake-danger {
-            background-color: #ffcccc !important;
+            background-color: #333 !important;
             animation: shake-hard 0.4s cubic-bezier(.36, .07, .19, .97) both;
         }
 
@@ -44,14 +43,14 @@
             50%,
             70%,
             90% {
-                transform: translate3d(-10px, 0, 0);
+                transform: translate3d(-15px, 0, 0);
             }
 
             20%,
             40%,
             60%,
             80% {
-                transform: translate3d(10px, 0, 0);
+                transform: translate3d(15px, 0, 0);
             }
         }
 
@@ -198,6 +197,7 @@
             box-shadow: 0 6px 0 #a9a9a9;
             color: #888;
             text-shadow: none;
+            cursor: not-allowed;
         }
 
         .fun-title {
@@ -207,7 +207,6 @@
             text-shadow: 2px 2px 0px #ffeaa7;
         }
 
-        /* 🔒 팝업(모달) 스타일 */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -277,12 +276,47 @@
             margin-top: 15px;
             cursor: pointer;
         }
+
+        /* ⚡ 벌칙용 거대 이모지 애니메이션 */
+        #penalty-visual {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 150px;
+            z-index: 9999;
+            display: none;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+        }
+
+        @keyframes pop-in-out {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+
+            20% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+
+            80% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 
 <body>
+    <!-- ⚡ 벌칙 시각 효과용 요소 -->
+    <div id="penalty-visual">⛈️</div>
 
-    <!-- 1. 로그인 화면 -->
     <div class="container" id="login-section">
         <h1 style="color: #ff6b81; text-shadow: 2px 2px 0px #ffeaa7;">🏠 꽃사남매 은행</h1>
         <p style="color: #666; font-size: 18px;">리모컨의 확인 버튼을 눌러 입장해 주세요!</p>
@@ -303,19 +337,14 @@
         </button>
     </div>
 
-    <!-- 2. 메인 화면 -->
     <div class="container" id="main-section" style="display: none; opacity: 0;">
         <h2 class="fun-title">🌟 오늘도 반짝반짝 빛나는 하루 🌟</h2>
-        <div class="grid-container" id="cards-container">
-            <!-- 자바스크립트에서 4명의 카드를 자동으로 그려줍니다 -->
-        </div>
+        <div class="grid-container" id="cards-container"></div>
     </div>
 
-    <!-- 3. 어른 비밀번호 확인 모달 -->
     <div class="modal-overlay" id="pin-modal">
         <div class="modal-box" id="pin-box">
             <h2>보호자 비밀번호</h2>
-            <!-- 숫자 키패드가 바로 뜨도록 설정 -->
             <input type="password" id="pin-input" class="pin-input" inputmode="numeric" pattern="[0-9]*"
                 placeholder="비밀번호">
             <br>
@@ -324,7 +353,6 @@
         </div>
     </div>
 
-    <!-- 4. 금액 선택 모달 -->
     <div class="modal-overlay" id="amt-modal">
         <div class="modal-box" id="amt-box">
             <h2 id="amt-title">금액 선택</h2>
@@ -341,7 +369,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        // 🔥 increment(더하기/빼기), getDoc(1회 조회) 추가
         import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -358,11 +385,16 @@
         const provider = new GoogleAuthProvider();
         const db = getFirestore(app);
 
-        // UI 요소
+        // 🎵 오디오 객체 미리 생성 (업로드한 파일 이름과 동일해야 합니다)
+        const soundIssue = new Audio('issue.mp3');
+        const soundDeduct = new Audio('deduct.mp3');
+        const soundCash = new Audio('cash.mp3');
+
         const loginSection = document.getElementById('login-section');
         const mainSection = document.getElementById('main-section');
         const googleLoginBtn = document.getElementById('google-login-btn');
         const cardsContainer = document.getElementById('cards-container');
+        const penaltyVisual = document.getElementById('penalty-visual');
 
         const pinModal = document.getElementById('pin-modal');
         const pinBox = document.getElementById('pin-box');
@@ -372,21 +404,11 @@
         const amtBox = document.getElementById('amt-box');
         const amtTitle = document.getElementById('amt-title');
 
-        const kids = [
-            { id: '하얀', icon: '🐰' },
-            { id: '가을', icon: '🦊' },
-            { id: '하늘', icon: '🐶' },
-            { id: '한별', icon: '🐻' }
-        ];
+        const kids = [{ id: '하얀', icon: '🐰' }, { id: '가을', icon: '🦊' }, { id: '하늘', icon: '🐶' }, { id: '한별', icon: '🐻' }];
+        let currentTargetKid = ''; let currentActionType = ''; let lastFocusedBtn = null;
 
-        // 상태 저장용 변수
-        let currentTargetKid = '';
-        let currentActionType = ''; // 'issue', 'deduct', 'cash'
-        let lastFocusedBtn = null; // 모달 닫힐 때 원래 버튼으로 돌아가기 위함
-
-        // 카드 생성 로직
         kids.forEach(kid => {
-            const cardHTML = `
+            cardsContainer.innerHTML += `
                 <div class="card">
                     <h3>${kid.icon} ${kid.id}</h3>
                     <div class="balance-box"><span id="bal-${kid.id}">0</span>원</div>
@@ -395,179 +417,112 @@
                     <button class="action-btn btn-cash" data-kid="${kid.id}" data-type="cash" disabled>🏦 현금 교환</button>
                 </div>
             `;
-            cardsContainer.innerHTML += cardHTML;
         });
 
-        // 실시간 잔액 연동
         function listenToCoupons() {
             kids.forEach(kid => {
-                const docRef = doc(db, "coupons", kid.id);
-                onSnapshot(docRef, (docSnap) => {
+                onSnapshot(doc(db, "coupons", kid.id), (docSnap) => {
                     if (docSnap.exists()) {
                         const balance = docSnap.data().balance;
                         document.getElementById(`bal-${kid.id}`).innerText = balance.toLocaleString();
-
-                        const cashBtn = document.querySelector(`.btn-cash[data-kid="${kid.id}"]`);
-                        cashBtn.disabled = balance < 5000;
+                        document.querySelector(`.btn-cash[data-kid="${kid.id}"]`).disabled = balance < 5000;
                     }
                 });
             });
         }
 
-        // 로그인 플로우
         function showMainScreen() {
             loginSection.style.opacity = 0;
             setTimeout(() => {
-                loginSection.style.display = 'none';
-                mainSection.style.display = 'block';
-                setTimeout(() => {
-                    mainSection.style.opacity = 1;
-                    listenToCoupons();
-                    const firstBtn = document.querySelector('.btn-issue');
-                    if (firstBtn) firstBtn.focus();
-                }, 50);
+                loginSection.style.display = 'none'; mainSection.style.display = 'block';
+                setTimeout(() => { mainSection.style.opacity = 1; listenToCoupons(); document.querySelector('.btn-issue')?.focus(); }, 50);
             }, 500);
         }
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) showMainScreen();
-            else googleLoginBtn.focus();
-        });
+        onAuthStateChanged(auth, (user) => { if (user) showMainScreen(); else googleLoginBtn.focus(); });
+        googleLoginBtn.addEventListener('click', async () => { try { await signInWithPopup(auth, provider); showMainScreen(); } catch (error) { console.error(error); } });
 
-        googleLoginBtn.addEventListener('click', async () => {
-            try { await signInWithPopup(auth, provider); showMainScreen(); }
-            catch (error) { console.error(error); }
-        });
-
-        // ==========================================
-        // 5단계 핵심: 기능 및 모달 로직
-        // ==========================================
-
-        // 1. 공통 모달 열기 함수
         function openPinModal(kidId, actionType, sourceBtn) {
-            currentTargetKid = kidId;
-            currentActionType = actionType;
-            lastFocusedBtn = sourceBtn;
-
-            pinInput.value = '';
-            pinModal.style.display = 'flex';
-            setTimeout(() => {
-                pinModal.style.opacity = 1;
-                pinBox.style.transform = 'scale(1)';
-                pinInput.focus(); // 리모컨 편의성을 위해 인풋에 바로 포커스
-            }, 10);
+            currentTargetKid = kidId; currentActionType = actionType; lastFocusedBtn = sourceBtn;
+            pinInput.value = ''; pinModal.style.display = 'flex';
+            setTimeout(() => { pinModal.style.opacity = 1; pinBox.style.transform = 'scale(1)'; pinInput.focus(); }, 10);
         }
 
         function closeModal(modalId, boxId) {
-            const modal = document.getElementById(modalId);
-            const box = document.getElementById(boxId);
-            modal.style.opacity = 0;
-            box.style.transform = 'scale(0.8)';
-            setTimeout(() => {
-                modal.style.display = 'none';
-                if (lastFocusedBtn) lastFocusedBtn.focus(); // 원래 누르던 버튼으로 복귀
-            }, 300);
+            document.getElementById(modalId).style.opacity = 0; document.getElementById(boxId).style.transform = 'scale(0.8)';
+            setTimeout(() => { document.getElementById(modalId).style.display = 'none'; if (lastFocusedBtn) lastFocusedBtn.focus(); }, 300);
         }
 
-        // 2. 메인 버튼 클릭 이벤트 바인딩 (이벤트 위임)
         cardsContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('action-btn')) {
-                const kidId = e.target.getAttribute('data-kid');
-                const actionType = e.target.getAttribute('data-type');
-                openPinModal(kidId, actionType, e.target);
+                openPinModal(e.target.getAttribute('data-kid'), e.target.getAttribute('data-type'), e.target);
             }
         });
 
-        // 3. 비밀번호 확인 로직
         async function verifyPin() {
-            const enteredPin = pinInput.value;
-            if (!enteredPin) return;
-
+            if (!pinInput.value) return;
             try {
-                // 파이어스토어 settings/auth 의 adultPassword 필드 읽기
-                const docRef = doc(db, "settings", "auth");
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists() && docSnap.data().adultPassword === enteredPin) {
-                    // 통과!
+                const docSnap = await getDoc(doc(db, "settings", "auth"));
+                if (docSnap.exists() && docSnap.data().adultPassword === pinInput.value) {
                     closeModal('pin-modal', 'pin-box');
-
                     if (currentActionType === 'cash') {
-                        // 현금화는 바로 5000원 차감 및 대형 축하
                         processTransaction(-5000);
+                        soundCash.play().catch(e => console.log(e)); // 🎵 현금화 사운드 재생
                         fireBigConfetti();
                     } else {
-                        // 발급/차감은 금액 모달 열기
                         setTimeout(() => {
                             amtTitle.innerText = currentActionType === 'issue' ? '🎁 지급할 금액' : '⚡ 차감할 금액';
                             amtTitle.style.color = currentActionType === 'issue' ? '#2196F3' : '#f44336';
-
-                            // 버튼 색상 변경
                             document.querySelectorAll('.amt-btn').forEach(btn => {
                                 btn.style.backgroundColor = currentActionType === 'issue' ? '#2196F3' : '#f44336';
                                 btn.style.boxShadow = `0 4px 0 ${currentActionType === 'issue' ? '#0b7dda' : '#d32f2f'}`;
                             });
-
                             amtModal.style.display = 'flex';
-                            setTimeout(() => {
-                                amtModal.style.opacity = 1;
-                                amtBox.style.transform = 'scale(1)';
-                                document.querySelector('.amt-btn').focus();
-                            }, 10);
+                            setTimeout(() => { amtModal.style.opacity = 1; amtBox.style.transform = 'scale(1)'; document.querySelector('.amt-btn').focus(); }, 10);
                         }, 300);
                     }
                 } else {
-                    alert("어른 비밀번호가 틀렸습니다!");
-                    pinInput.value = '';
-                    pinInput.focus();
+                    alert("어른 비밀번호가 틀렸습니다!"); pinInput.value = ''; pinInput.focus();
                 }
-            } catch (error) {
-                console.error("DB 에러", error);
-                alert("서버 연결 오류");
-            }
+            } catch (error) { console.error("DB 에러", error); }
         }
 
         document.getElementById('pin-confirm').addEventListener('click', verifyPin);
         document.getElementById('pin-cancel').addEventListener('click', () => closeModal('pin-modal', 'pin-box'));
         pinInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') verifyPin(); });
 
-        // 4. 금액 선택 및 DB 업데이트 로직
         document.querySelectorAll('.amt-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const amount = parseInt(btn.innerText);
-                const finalAmount = currentActionType === 'issue' ? amount : -amount;
-
-                processTransaction(finalAmount);
+                processTransaction(currentActionType === 'issue' ? amount : -amount);
                 closeModal('amt-modal', 'amt-box');
 
-                // 애니메이션 실행
+                // 🌟 애니메이션 및 사운드 실행
                 if (currentActionType === 'issue') {
+                    soundIssue.play().catch(e => console.log(e)); // 🎵 발급 사운드
                     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
                 } else {
+                    soundDeduct.play().catch(e => console.log(e)); // 🎵 차감 사운드
+
+                    // ⚡ 배경 흔들림 + 거대 이모지 팝업
                     document.body.classList.add('shake-danger');
-                    setTimeout(() => document.body.classList.remove('shake-danger'), 500);
+                    penaltyVisual.style.display = 'block';
+                    penaltyVisual.style.animation = 'pop-in-out 0.8s ease forwards';
+
+                    setTimeout(() => {
+                        document.body.classList.remove('shake-danger');
+                        penaltyVisual.style.display = 'none';
+                        penaltyVisual.style.animation = '';
+                    }, 800);
                 }
             });
         });
 
         document.getElementById('amt-cancel').addEventListener('click', () => closeModal('amt-modal', 'amt-box'));
+        async function processTransaction(amount) { await updateDoc(doc(db, "coupons", currentTargetKid), { balance: increment(amount) }).catch(e => console.error(e)); }
 
-        async function processTransaction(amount) {
-            const docRef = doc(db, "coupons", currentTargetKid);
-            try {
-                // increment를 사용해 기존 값에 더하거나 뺌
-                await updateDoc(docRef, { balance: increment(amount) });
-            } catch (error) {
-                console.error("업데이트 실패", error);
-            }
-        }
-
-        // 현금화 전용 초대형 폭죽
         function fireBigConfetti() {
-            var duration = 3 * 1000;
-            var animationEnd = Date.now() + duration;
-            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
+            var duration = 3 * 1000; var animationEnd = Date.now() + duration; var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
             function randomInRange(min, max) { return Math.random() * (max - min) + min; }
             var interval = setInterval(function () {
                 var timeLeft = animationEnd - Date.now();
@@ -578,41 +533,22 @@
             }, 250);
         }
 
-        // ==========================================
-        // 📺 리모컨 조작 방향키 / 엔터 효과 (유지)
-        // ==========================================
+        // 리모컨 포커스 유지
         document.addEventListener('keydown', (e) => {
-            // 모달 안팎의 포커스 관리를 위해 querySelector 수정
             if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-
-            // 현재 화면에 보이는(display!=none) 모달이 있다면 그 안에서만 포커스 이동
-            let focusContainer = document;
-            if (pinModal.style.display === 'flex') focusContainer = pinModal;
-            else if (amtModal.style.display === 'flex') focusContainer = amtModal;
-
+            let focusContainer = pinModal.style.display === 'flex' ? pinModal : (amtModal.style.display === 'flex' ? amtModal : document);
             const focusables = Array.from(focusContainer.querySelectorAll('button:not([disabled]), input'));
             const currentIndex = focusables.indexOf(document.activeElement);
-
-            if (currentIndex === -1 && focusables.length > 0) {
-                focusables[0].focus(); return;
-            }
+            if (currentIndex === -1 && focusables.length > 0) { focusables[0].focus(); return; }
             if (currentIndex === -1) return;
-
             e.preventDefault();
             let nextIndex = currentIndex;
-
             if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextIndex = (currentIndex + 1) % focusables.length;
             else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') nextIndex = (currentIndex - 1 + focusables.length) % focusables.length;
-
             focusables[nextIndex].focus();
         });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && document.activeElement.tagName === 'BUTTON') document.activeElement.classList.add('pressed');
-        });
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter' && document.activeElement.tagName === 'BUTTON') document.activeElement.classList.remove('pressed');
-        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && document.activeElement.tagName === 'BUTTON') document.activeElement.classList.add('pressed'); });
+        document.addEventListener('keyup', (e) => { if (e.key === 'Enter' && document.activeElement.tagName === 'BUTTON') document.activeElement.classList.remove('pressed'); });
     </script>
 </body>
 
