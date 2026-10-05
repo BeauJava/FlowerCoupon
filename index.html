@@ -368,7 +368,7 @@
     </div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         // 🔥 로깅을 위해 collection, addDoc, serverTimestamp 추가
         import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -440,7 +440,16 @@
         }
 
         onAuthStateChanged(auth, (user) => { if (user) showMainScreen(); else googleLoginBtn.focus(); });
-        googleLoginBtn.addEventListener('click', async () => { try { await signInWithPopup(auth, provider); showMainScreen(); } catch (error) { console.error(error); } });
+        // 리다이렉트 과정에서 발생한 에러를 잡아줍니다.
+        getRedirectResult(auth).catch((error) => {
+            console.error("로그인 에러:", error);
+            alert("로그인 중 문제가 발생했습니다.");
+        });
+
+        googleLoginBtn.addEventListener('click', () => {
+            // 팝업 대신 현재 창에서 구글 로그인 페이지로 직접 이동 (리다이렉트)
+            signInWithRedirect(auth, provider);
+        });
 
         function openPinModal(kidId, actionType, sourceBtn) {
             currentTargetKid = kidId; currentActionType = actionType; lastFocusedBtn = sourceBtn;
